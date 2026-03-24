@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MK71TWZGL7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+        gtag('config', 'G-MK71TWZGL7');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">展覽單元 | Gallery Unit</title>
+    <link rel="stylesheet" href="assets/css/swiper-bundle.min.css?v001"/>
+    <link rel="stylesheet" href="assets/css/styles.css?v004">
+</head>
+
+<body>
+<!-- Navigation Component -->
+<div id="nav-component"></div>
+
+<!-- Content Layout -->
+<section class="content-page">
+
+    <div class="content-layout">
+
+        <h1 class="page-heading" id="page-heading"></h1>
+        <div class="top-row">
+            <div class="slider-out">
+                <div class="slider-container swiper" id="gallery-swiper">
+                    <div class="swiper-wrapper" id="slider-track"></div>
+                </div>
+            </div>
+            <div class="menu-wrapper">
+                <div class="menu-container">
+                    <a href="intro.html?unit=permanent" class="menu-btn" data-unit="permanent"
+                       data-i18n="permanent_unit">常態單元</a>
+                    <a href="intro.html?unit=seasonal" class="menu-btn" data-unit="seasonal"
+                       data-i18n="seasonal_unit">當季單元</a>
+                </div>
+            </div>
+        </div>
+        <div class="hero-mobile-box">
+            <div class="avatar"></div>
+            <div class="hero-mobile"></div>
+            <div class="text-container">
+                <h2 id="content-title"></h2>
+                <div class="text-content">
+
+                    <p id="content-description"></p>
+                </div>
+                <div class="audio-player">
+                    <button class="audio-btn" id="audio-btn"></button>
+                    <!-- audio 元素已移至 index.html 統一管理 -->
+                </div>
+            </div>
+        </div>
+        <div class="top-row">
+            <div class="menu-wrapper mobile">
+                <div class="menu-container">
+                    <a href="intro.html?unit=permanent" class="menu-btn" data-unit="permanent"
+                       data-i18n="permanent_unit">常態單元</a>
+                    <a href="intro.html?unit=seasonal" class="menu-btn" data-unit="seasonal"
+                       data-i18n="seasonal_unit">當季單元</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Back to Home Button -->
+<a href="home.html" class="back-home-btn" style="display: none" data-i18n="back_home">返回首頁</a>
+
+<script src="assets/js/swiper-bundle.min.js"></script>
+<script src="assets/js/common.js"></script>
+<script src="assets/js/gallery.js?v005"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // 從 URL 參數取得單元類型
+        const urlParams = new URLSearchParams(window.location.search);
+        const unit = urlParams.get('unit') || 'seasonal';
+
+        // 單元類型對應表
+        const unitConfig = {
+            seasonal: {
+                unitType: '當季單元',
+                titleTW: '當季單元',
+                titleEN: 'Seasonal Unit'
+            },
+            special: {
+                unitType: '特別單元',
+                titleTW: '特別單元',
+                titleEN: 'Special Unit'
+            },
+            permanent: {
+                unitType: '常態單元',
+                titleTW: '常態單元',
+                titleEN: 'Permanent Unit'
+            }
+        };
+
+        const config = unitConfig[unit] || unitConfig.seasonal;
+
+        // 設定頁面標題
+        document.getElementById('page-title').textContent = `${config.titleTW} | ${config.titleEN}`;
+
+        // 設定頁面標題（heading）
+        const lang = getCurrentLang ? getCurrentLang() : 'tw';
+        document.getElementById('page-heading').textContent = lang === 'tw' ? config.titleTW : config.titleEN;
+
+        // 監聽語言變化更新標題
+        document.addEventListener('languageChanged', () => {
+            const newLang = getCurrentLang();
+            document.getElementById('page-heading').textContent = newLang === 'tw' ? config.titleTW : config.titleEN;
+        });
+
+        // 設定選單 active 狀態 + GA4 追蹤
+        document.querySelectorAll('.menu-btn[data-unit]').forEach(btn => {
+            if (btn.dataset.unit === unit) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+
+            // GA4 追蹤：選擇單元
+            btn.addEventListener('click', () => {
+                if (typeof trackGA4Event !== 'undefined') {
+                    trackGA4Event('select_unit', {
+                        'unit_type': btn.dataset.unit
+                    });
+                }
+            });
+        });
+
+        // 初始化 gallery
+        initGallery(config.unitType);
+    });
+</script>
+</body>
+
+</html>

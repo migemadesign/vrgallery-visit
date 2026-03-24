@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MK71TWZGL7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-MK71TWZGL7');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美術館導覽 | Gallery Guide</title>
+    <link rel="stylesheet" href="assets/css/styles.css?v02">
+</head>
+
+<body>
+    <!-- Navigation Component -->
+    <div id="nav-component"></div>
+
+    <!-- Home Page -->
+    <section class="home-page">
+        <div class="home-content">
+            <div class="welcome-text" data-i18n="welcome">歡迎光臨</div>
+            <img src="assets/images/logo.svg" alt="Gallery Logo" class="home-logo">
+            <button class="enter-btn" id="enter-gallery" data-i18n="enter_btn">點擊進入</button>
+        </div>
+        <div class="home-container">
+            <div class="hero-mascot home"></div>
+        </div>
+    </section>
+
+    <script src="assets/js/common.js?v005"></script>
+    <script>
+        document.getElementById('enter-gallery').addEventListener('click', () => {
+            // GA4 追蹤：進入展覽
+            if (typeof trackGA4Event !== 'undefined') {
+                trackGA4Event('enter_gallery');
+            }
+
+            // 通知父頁面解鎖音訊並導航
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ action: 'navigate', url: 'intro.html' }, '*');
+            } else {
+                // 如果不在 iframe 中，直接跳轉
+                window.location.href = 'intro.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MK71TWZGL7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-MK71TWZGL7');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美術館導覽 | Gallery Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #main-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <iframe id="main-frame" src="home.html"></iframe>
+    <!-- 統一音訊播放器 -->
+    <audio id="global-audio"></audio>
+
+    <script>
+        let audioUnlocked = false;
+        const globalAudio = document.getElementById('global-audio');
+
+        // 追蹤音訊來源和待播放的 gallery 音訊
+        let audioSource = null; // 'intro' 或 'gallery'
+        let pendingGalleryAudio = null; // 待播放的 gallery 音訊 src
+
+        // 監聽來自 iframe 的訊息
+        window.addEventListener('message', (event) => {
+            if (!event.data || !event.data.action) return;
+
+            switch (event.data.action) {
+                case 'navigate':
+                    handleNavigate(event.data.url);
+                    break;
+                case 'audio:play':
+                    handleAudioPlay(event.data.src, event.data.source, event.data.forcePlay);
+                    break;
+                case 'audio:pause':
+                    handleAudioPause();
+                    break;
+                case 'audio:stop':
+                    handleAudioStop();
+                    break;
+            }
+        });
+
+        function handleNavigate(url) {
+            // 如果是從 intro 導航到 gallery，且 intro 音訊正在播放，不要停止
+            const isGoingToGallery = url.includes('gallery.html');
+            const isIntroPlaying = audioSource === 'intro' && !globalAudio.paused;
+
+            if (isGoingToGallery && isIntroPlaying) {
+                // 讓 intro 音訊繼續播放，導航但不停止音訊
+                navigateFrame(url);
+                return;
+            }
+
+            // 其他情況停止當前音訊
+            handleAudioStop();
+
+            // 解鎖音訊（如果還沒解鎖）
+            if (!audioUnlocked) {
+                const blankAudio = new Audio('assets/music/blank.mp3?v001');
+                blankAudio.play().then(() => {
+                    audioUnlocked = true;
+                    navigateFrame(url);
+                }).catch(() => {
+                    navigateFrame(url);
+                });
+            } else {
+                navigateFrame(url);
+            }
+        }
+
+        function navigateFrame(url) {
+            document.getElementById('main-frame').src = url;
+        }
+
+        // 音訊控制函式
+        function handleAudioPlay(src, source, forcePlay) {
+            // 如果是強制播放（用戶點擊），直接終止當前音訊
+            if (forcePlay) {
+                globalAudio.pause();
+                globalAudio.currentTime = 0;
+                pendingGalleryAudio = null;
+            }
+            // 如果 intro 音訊正在播放且不是強制播放，gallery 音訊需要等待
+            else if (source === 'gallery' && audioSource === 'intro' && !globalAudio.paused) {
+                pendingGalleryAudio = src;
+                // 通知 gallery 需要等待
+                sendAudioStatus('waiting');
+                return;
+            }
+
+            // 清除待播放
+            pendingGalleryAudio = null;
+            audioSource = source || 'unknown';
+
+            if (src) {
+                globalAudio.src = src;
+            }
+            globalAudio.play().then(() => {
+                sendAudioStatus('playing');
+            }).catch(error => {
+                console.log('Audio play prevented:', error);
+                sendAudioStatus('error');
+            });
+        }
+
+        function handleAudioPause() {
+            globalAudio.pause();
+            sendAudioStatus('paused');
+        }
+
+        function handleAudioStop() {
+            globalAudio.pause();
+            globalAudio.currentTime = 0;
+            globalAudio.src = '';
+            audioSource = null;
+            pendingGalleryAudio = null;
+            sendAudioStatus('stopped');
+        }
+
+        // 發送音訊狀態給 iframe
+        function sendAudioStatus(status) {
+            const iframe = document.getElementById('main-frame');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    action: 'audio:status',
+                    status: status
+                }, '*');
+            }
+        }
+
+        // 監聽音訊事件並通知 iframe
+        globalAudio.addEventListener('ended', () => {
+            const previousSource = audioSource;
+            sendAudioStatus('ended');
+
+            // 如果 intro 音訊播完且有待播放的 gallery 音訊
+            if (previousSource === 'intro' && pendingGalleryAudio) {
+                const src = pendingGalleryAudio;
+                pendingGalleryAudio = null;
+                audioSource = 'gallery';
+                globalAudio.src = src;
+                globalAudio.play().then(() => {
+                    sendAudioStatus('playing');
+                }).catch(error => {
+                    console.log('Audio play prevented:', error);
+                    sendAudioStatus('error');
+                });
+            }
+        });
+
+        globalAudio.addEventListener('pause', () => {
+            if (globalAudio.currentTime > 0) {
+                sendAudioStatus('paused');
+            }
+        });
+    </script>
+</body>
+
+</html>
